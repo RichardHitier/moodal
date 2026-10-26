@@ -19,7 +19,7 @@
 </div>
 
 <header class="top wrap">
-  <span class="brand">Moodal</span>
+  <span class="brand">Moodal <small class="app-version"></small></span>
   <span id="today-label" class="today"></span>
 </header>
 
@@ -27,11 +27,11 @@
   <section id="v-home">
     <button id="go-saisie" class="hero-btn" type="button">
       <span class="hb-title">Nouvelle saisie</span>
-      <span class="hb-sub">Humeur · irritabilité · fatigue · concentration · appétit</span>
+      <span class="hb-sub">Humeur · anxiété · pensées · fatigue · concentration…</span>
     </button>
     <div class="quick">
       <button id="go-prise" class="q-btn" type="button">
-        <span class="q-title">J'ai pris ma dose</span>
+        <span class="q-title">Médicaments</span>
         <span id="prise-sub" class="q-sub"></span>
       </button>
       <button id="go-bilan" class="q-btn" type="button">
@@ -116,12 +116,13 @@
       </div>
     </div>
     <div class="card">
-      <h2>Dose habituelle</h2>
-      <p class="muted">Reprise par le bouton « J'ai pris ma dose ». Elle se met aussi à jour quand tu modifies une prise.</p>
-      <div class="row">
-        <input id="set-dose" type="text" inputmode="decimal" placeholder="ex. 20" aria-label="Dose habituelle en mg">
-        <span>mg</span>
-        <button id="set-dose-ok" type="button" class="btn">Enregistrer</button>
+      <h2>Mes médicaments</h2>
+      <p class="muted">La liste reste sur ce téléphone, comme le reste. La dose se met à jour à chaque prise notée.</p>
+      <ul id="med-list" class="med-list"></ul>
+      <div class="row add-row">
+        <input id="med-name" type="text" placeholder="Nom" aria-label="Nom du nouveau médicament">
+        <input id="med-dose" type="text" inputmode="decimal" placeholder="mg" class="med-dose" aria-label="Dose en mg">
+        <button id="med-add" type="button" class="btn">Ajouter</button>
       </div>
     </div>
     <div class="card">
@@ -139,7 +140,7 @@
       <p class="muted">Supprime toutes les saisies, prises et bilans de ce téléphone.</p>
       <button id="wipe" type="button" class="ghost-danger" data-label="Effacer toutes les données">Effacer toutes les données</button>
     </div>
-    <p class="muted small foot">Moodal · version 1</p>
+    <p class="muted small foot">Moodal <span class="app-version"></span></p>
   </section>
 </main>
 
@@ -158,23 +159,28 @@
 
 <dialog id="d-prise">
   <form id="f-prise" autocomplete="off">
-    <h2 id="p-title">Nouvelle prise</h2>
-    <p id="p-warn" class="warn" hidden></p>
+    <h2 id="p-title">Prise de médicaments</h2>
     <label class="field">Heure
       <input id="p-when" type="datetime-local" required>
     </label>
-    <label class="field">Dose (mg)
-      <input id="p-dose" type="text" inputmode="decimal" placeholder="ex. 20">
-    </label>
-    <div class="chips-row" id="p-chips"></div>
+    <div id="p-meds" class="med-pick"></div>
+    <details id="p-add" class="notes">
+      <summary><span class="when-closed">+ Ajouter un médicament</span><span class="when-open">Ajouter un médicament</span></summary>
+      <div class="row add-row">
+        <input id="p-add-name" type="text" placeholder="Nom" aria-label="Nom du médicament">
+        <input id="p-add-dose" type="text" inputmode="decimal" placeholder="mg" class="med-dose" aria-label="Dose en mg">
+        <button id="p-add-ok" type="button" class="btn">Ajouter</button>
+      </div>
+    </details>
     <div class="actions">
       <button type="button" id="p-cancel">Annuler</button>
-      <button type="submit" class="primary">Enregistrer</button>
+      <button type="submit" class="primary" id="p-ok">Enregistrer</button>
     </div>
     <button type="button" id="p-del" class="ghost-danger" data-label="Supprimer cette prise" hidden>Supprimer cette prise</button>
   </form>
 </dialog>
 <!--/BODY-->
+<script src="version.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

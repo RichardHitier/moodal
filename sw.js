@@ -1,11 +1,13 @@
 // Service worker : met l'appli en cache pour qu'elle s'ouvre hors ligne.
-// Change CACHE à chaque version publiée pour forcer la mise à jour.
-const CACHE = 'moodal-v1';
+// Le numéro de version vient de version.js : le changer suffit à forcer la mise à jour.
+importScripts('version.js');
+const CACHE = 'moodal-' + self.MOODAL_VERSION;
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './version.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

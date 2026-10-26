@@ -2,8 +2,8 @@
 
 Petite application web installable (PWA) pour tenir un journal d'humeur, de prises et de sommeil sur Android.
 
-- **Nouvelle saisie** : humeur (déprimé → hypomane), irritabilité, fatigue, concentration, appétit, plus des notes facultatives (pensées, fantasme, déclencheur).
-- **J'ai pris ma dose** : un toucher enregistre l'heure avec la dose habituelle.
+- **Nouvelle saisie** : humeur (déprimé → hypomane), anxiété, pensées négatives, irritabilité, fatigue, concentration, appétit, plus des notes facultatives (pensées, fantasme, déclencheur).
+- **Médicaments** : liste personnelle (gardée sur le téléphone), plusieurs prises notées en un seul enregistrement.
 - **Bilan du matin** : durée et qualité du sommeil, une fois par jour.
 - **Historique** : graphique jour ou semaine, avec les prises en repères verticaux.
 - **Données** : export CSV (notes exclues par défaut), sauvegarde et restauration JSON.
@@ -26,4 +26,4 @@ Aucune dépendance ni étape de compilation : HTML, CSS et JavaScript.
 python3 -m http.server 8000   # puis http://localhost:8000
 ```
 
-À chaque nouvelle version, incrémenter `CACHE` dans `sw.js` pour que les téléphones récupèrent la mise à jour.
+À chaque nouvelle version, changer le numéro dans `version.js` : il s'affiche dans l'appli et force la mise à jour du cache sur les téléphones.
