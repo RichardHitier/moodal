@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Moodal</title>
+<meta name="theme-color" content="#2E4A9E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<style>:root{padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}</style>
+</head>
+<body>
+<!--BODY-->
+<div id="preview-banner" class="preview-banner" hidden>
+  <span>Aperçu avec des données d'exemple. La vraie appli démarre avec un journal vide.</span>
+  <button id="preview-clear" type="button">Vider</button>
+</div>
+
+<header class="top wrap">
+  <span class="brand">Moodal</span>
+  <span id="today-label" class="today"></span>
+</header>
+
+<main class="wrap">
+  <section id="v-home">
+    <button id="go-saisie" class="hero-btn" type="button">
+      <span class="hb-title">Nouvelle saisie</span>
+      <span class="hb-sub">Humeur · irritabilité · fatigue · concentration · appétit</span>
+    </button>
+    <div class="quick">
+      <button id="go-prise" class="q-btn" type="button">
+        <span class="q-title">J'ai pris ma dose</span>
+        <span id="prise-sub" class="q-sub"></span>
+      </button>
+      <button id="go-bilan" class="q-btn" type="button">
+        <span class="q-title">Bilan du matin</span>
+        <span id="bilan-sub" class="q-sub"></span>
+      </button>
+    </div>
+    <h2 class="sec">Aujourd'hui</h2>
+    <div id="home-chart" class="chart"></div>
+    <ol id="home-list" class="entries"></ol>
+  </section>
+
+  <section id="v-saisie" hidden>
+    <div class="view-head">
+      <button class="back" data-back type="button">‹ Retour</button>
+      <h1 id="saisie-title">Nouvelle saisie</h1>
+    </div>
+    <form id="f-saisie" autocomplete="off">
+      <label class="field">Date et heure
+        <input id="s-when" type="datetime-local" required>
+      </label>
+      <div id="s-scales" class="scales"></div>
+      <details id="s-notes" class="notes">
+        <summary><span class="when-closed">+ Ajouter une note</span><span class="when-open">Notes</span></summary>
+        <label class="field">Pensées<textarea id="s-pensees" rows="3"></textarea></label>
+        <label class="field">Fantasme<textarea id="s-fantasme" rows="3"></textarea></label>
+        <label class="field">Déclencheur<textarea id="s-declencheur" rows="3"></textarea></label>
+      </details>
+      <div class="actions"><button type="submit" class="primary">Enregistrer</button></div>
+      <button type="button" id="s-del" class="ghost-danger" data-label="Supprimer cette saisie" hidden>Supprimer cette saisie</button>
+    </form>
+  </section>
+
+  <section id="v-bilan" hidden>
+    <div class="view-head">
+      <button class="back" data-back type="button">‹ Retour</button>
+      <h1 id="bilan-title">Bilan du matin</h1>
+    </div>
+    <form id="f-bilan" autocomplete="off">
+      <label class="field">Nuit se terminant le
+        <input id="b-day" type="date" required>
+      </label>
+      <div id="b-scales" class="scales"></div>
+      <label class="field">Note (réveils, rêves…)<textarea id="b-note" rows="2"></textarea></label>
+      <div class="actions"><button type="submit" class="primary">Enregistrer</button></div>
+      <button type="button" id="b-del" class="ghost-danger" data-label="Supprimer ce bilan" hidden>Supprimer ce bilan</button>
+    </form>
+  </section>
+
+  <section id="v-hist" hidden>
+    <div class="seg">
+      <button type="button" data-mode="day" aria-pressed="true">Jour</button>
+      <button type="button" data-mode="week" aria-pressed="false">Semaine</button>
+    </div>
+    <div class="period">
+      <button id="h-prev" type="button" aria-label="Période précédente">‹</button>
+      <span id="h-label"></span>
+      <button id="h-next" type="button" aria-label="Période suivante">›</button>
+    </div>
+    <div id="h-chart" class="chart"></div>
+    <div id="h-bilans" class="bilans"></div>
+    <ol id="h-list" class="entries"></ol>
+  </section>
+
+  <section id="v-data" hidden>
+    <h1 class="page-h">Données</h1>
+    <div class="card">
+      <h2>Exporter pour ton psychiatre</h2>
+      <p class="muted">Un tableau CSV qui s'ouvre dans un tableur. Les notes restent privées, sauf si tu les inclus.</p>
+      <label class="field">Période
+        <select id="x-range">
+          <option value="7">7 derniers jours</option>
+          <option value="30" selected>30 derniers jours</option>
+          <option value="90">90 derniers jours</option>
+          <option value="all">Tout</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="x-notes"> Inclure les notes (pensées, fantasme, déclencheur, bilan)</label>
+      <div class="actions">
+        <button id="x-share" class="primary" type="button">Partager le CSV</button>
+        <button id="x-dl" type="button">Télécharger</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Dose habituelle</h2>
+      <p class="muted">Reprise par le bouton « J'ai pris ma dose ». Elle se met aussi à jour quand tu modifies une prise.</p>
+      <div class="row">
+        <input id="set-dose" type="text" inputmode="decimal" placeholder="ex. 20" aria-label="Dose habituelle en mg">
+        <span>mg</span>
+        <button id="set-dose-ok" type="button" class="btn">Enregistrer</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Sauvegarde</h2>
+      <p class="muted">Tes données restent sur ce téléphone, rien n'est envoyé ailleurs. Si tu effaces les données de Chrome, elles disparaissent : exporte une sauvegarde de temps en temps.</p>
+      <div class="actions">
+        <button id="bk-out" type="button">Exporter la sauvegarde</button>
+        <label class="btn" for="bk-in">Restaurer…</label>
+        <input id="bk-in" type="file" accept="application/json,.json" hidden>
+      </div>
+      <p id="store-status" class="muted small"></p>
+    </div>
+    <div class="card">
+      <h2>Tout effacer</h2>
+      <p class="muted">Supprime toutes les saisies, prises et bilans de ce téléphone.</p>
+      <button id="wipe" type="button" class="ghost-danger" data-label="Effacer toutes les données">Effacer toutes les données</button>
+    </div>
+    <p class="muted small foot">Moodal · version 1</p>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Navigation">
+  <div class="tabs">
+    <button type="button" data-tab="home">Aujourd'hui</button>
+    <button type="button" data-tab="hist">Historique</button>
+    <button type="button" data-tab="data">Données</button>
+  </div>
+</nav>
+
+<div id="toast" class="toast" role="status" hidden>
+  <span id="toast-msg"></span>
+  <button id="toast-act" type="button" hidden></button>
+</div>
+
+<dialog id="d-prise">
+  <form id="f-prise" autocomplete="off">
+    <h2 id="p-title">Nouvelle prise</h2>
+    <p id="p-warn" class="warn" hidden></p>
+    <label class="field">Heure
+      <input id="p-when" type="datetime-local" required>
+    </label>
+    <label class="field">Dose (mg)
+      <input id="p-dose" type="text" inputmode="decimal" placeholder="ex. 20">
+    </label>
+    <div class="chips-row" id="p-chips"></div>
+    <div class="actions">
+      <button type="button" id="p-cancel">Annuler</button>
+      <button type="submit" class="primary">Enregistrer</button>
+    </div>
+    <button type="button" id="p-del" class="ghost-danger" data-label="Supprimer cette prise" hidden>Supprimer cette prise</button>
+  </form>
+</dialog>
+<!--/BODY-->
+<script src="app.js"></script>
+</body>
+</html>
