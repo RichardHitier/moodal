@@ -20,6 +20,7 @@ const NOTE_KEYS = ['pensees', 'fantasme', 'declencheur'];
 const BILAN_SCALES = {
   sommeil_h: { label: 'Durée du sommeil',   kind: 'level', opts: [[4, '≤ 4 h'], [5, '5 h'], [6, '6 h'], [7, '7 h'], [8, '8 h'], [9, '≥ 9 h']] },
   sommeil_q: { label: 'Qualité du sommeil', kind: 'level', opts: [[0, 'Très mauvaise'], [1, 'Mauvaise'], [2, 'Moyenne'], [3, 'Bonne'], [4, 'Très bonne']] },
+  reves:     { label: 'Rêves',              kind: 'yesno', opts: [[true, 'Oui'], [false, 'Non']] },
 };
 // [clé, libellé, couleur, valeur ramenée sur 0..4]
 const SERIES = [
@@ -336,41 +337,112 @@ $('#f-prise').addEventListener('submit', ev => {
 $('#p-cancel').addEventListener('click', () => $('#d-prise').close());
 
 /* ---------- Bilan du matin ---------- */
+// Le bilan regroupe le sommeil, les rêves et les médicaments du matin (cases à cocher).
+// Les prises cochées deviennent des prises ordinaires, reliées au bilan par bilanId.
 let bState = null;
 const bilanFor = day => db.entries.find(e => e.type === 'bilan' && e.day === day) || null;
 function bilanSummary(b) {
   const p = [];
   if (b.sommeil_h != null) p.push(optLabel(BILAN_SCALES.sommeil_h, b.sommeil_h));
   if (b.sommeil_q != null) p.push(optLabel(BILAN_SCALES.sommeil_q, b.sommeil_q).toLowerCase());
+  if (b.reves === true) p.push('rêves');
+  const n = db.entries.filter(e => e.type === 'prise' && e.bilanId === b.id).length;
+  if (n) p.push(`${n} méd.`);
   if (!p.length && b.note) p.push('note');
   return p.join(' · ');
+}
+const morningMeds = () => { const m = meds().filter(x => x.matin); return m.length ? m : meds(); };
+function renderBilanMeds() {
+  const box = $('#b-meds');
+  box.replaceChildren();
+  const day = $('#b-day').value;
+  const list = morningMeds();
+  $('#b-meds-wrap').hidden = !meds().length;
+  $('#b-meds-hint').hidden = meds().some(x => x.matin);
+  list.forEach(m => {
+    const linked = db.entries.find(e => e.type === 'prise' && e.medId === m.id && bState.id && e.bilanId === bState.id);
+    const other = !linked && db.entries.find(e => e.type === 'prise' && e.medId === m.id && !e.bilanId && dayKey(e.t) === day && new Date(e.t).getHours() < 12);
+    const row = document.createElement('label');
+    row.className = 'med-check';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.med = m.id;
+    const nm = document.createElement('span');
+    nm.className = 'med-name';
+    nm.textContent = m.name;
+    const sub = document.createElement('span');
+    sub.className = 'med-sub';
+    if (other) {
+      cb.checked = true;
+      cb.disabled = true;
+      sub.textContent = `Déjà notée à ${hm(other.t)}`;
+    } else {
+      cb.checked = bState.checks.has(m.id) ? bState.checks.get(m.id) : !!linked;
+      sub.textContent = m.dose != null ? fmtDose(m.dose) : 'Dose à indiquer dans Données';
+    }
+    cb.addEventListener('change', () => bState.checks.set(m.id, cb.checked));
+    const txt = document.createElement('span');
+    txt.className = 'med-check-txt';
+    txt.append(nm, sub);
+    row.append(cb, txt);
+    box.append(row);
+  });
 }
 function openBilan(day) {
   day = day || dayKey(Date.now());
   const ex = bilanFor(day);
-  bState = { id: ex ? ex.id : null, vals: { sommeil_h: ex && ex.sommeil_h != null ? ex.sommeil_h : null, sommeil_q: ex && ex.sommeil_q != null ? ex.sommeil_q : null } };
+  const val = k => (ex && ex[k] != null ? ex[k] : null);
+  bState = { id: ex ? ex.id : null, vals: { sommeil_h: val('sommeil_h'), sommeil_q: val('sommeil_q'), reves: val('reves') }, checks: new Map() };
   $('#bilan-title').textContent = ex ? 'Modifier le bilan' : 'Bilan du matin';
   $('#b-day').value = day;
   $('#b-note').value = (ex && ex.note) || '';
   buildScales($('#b-scales'), BILAN_SCALES, bState.vals);
-  setDelete('#b-del', !!ex, () => { removeEntry(ex.id); goBack(); toast('Bilan supprimé'); });
+  renderBilanMeds();
+  setDelete('#b-del', !!ex, () => {
+    db.entries = db.entries.filter(e => e.id !== ex.id && e.bilanId !== ex.id);
+    persist();
+    goBack();
+    toast('Bilan et prises cochées supprimés');
+  });
   show('bilan');
 }
+$('#b-day').addEventListener('change', () => { bState.checks = new Map(); renderBilanMeds(); });
 $('#f-bilan').addEventListener('submit', ev => {
   ev.preventDefault();
   const day = $('#b-day').value;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { toast('Date invalide.'); return; }
   const v = bState.vals;
   const note = $('#b-note').value.trim();
-  if (v.sommeil_h == null && v.sommeil_q == null && !note) { toast('Choisis au moins une valeur.'); return; }
+  const boxes = [...document.querySelectorAll('#b-meds input[type=checkbox]:not(:disabled)')];
+  const checked = boxes.filter(c => c.checked);
+  if (v.sommeil_h == null && v.sommeil_q == null && v.reves == null && !note && !checked.length) { toast('Choisis au moins une valeur.'); return; }
+  for (const c of checked) {
+    const m = meds().find(x => x.id === c.dataset.med);
+    if (m && m.dose == null && !db.entries.some(e => e.bilanId === bState.id && e.medId === m.id)) {
+      toast(`Indique la dose habituelle de ${m.name} dans l'onglet Données.`);
+      return;
+    }
+  }
   const other = bilanFor(day);
   let id = bState.id || (other && other.id) || uid();
   if (other && bState.id && other.id !== bState.id) { removeEntry(bState.id); id = other.id; } // un seul bilan par nuit
-  const [y, m, d] = day.split('-').map(Number);
-  const e = { id, type: 'bilan', day, t: new Date(y, m - 1, d, 7, 0).getTime() };
+  const [y, mo, d] = day.split('-').map(Number);
+  const e = { id, type: 'bilan', day, t: new Date(y, mo - 1, d, 7, 0).getTime() };
   if (v.sommeil_h != null) e.sommeil_h = v.sommeil_h;
   if (v.sommeil_q != null) e.sommeil_q = v.sommeil_q;
+  if (v.reves != null) e.reves = v.reves;
   if (note) e.note = note;
+  // Prises du matin : ajouter les cases cochées, retirer celles qu'on a décochées.
+  const linkIds = new Set([bState.id, id].filter(Boolean));
+  const tPrise = day === dayKey(Date.now()) ? Date.now() : new Date(y, mo - 1, d, 8, 0).getTime();
+  boxes.forEach(c => {
+    const m = meds().find(x => x.id === c.dataset.med);
+    if (!m) return;
+    const linked = db.entries.find(x => x.type === 'prise' && x.medId === m.id && linkIds.has(x.bilanId));
+    if (c.checked && !linked) db.entries.push({ id: uid(), type: 'prise', t: tPrise, med: m.name, medId: m.id, dose: m.dose, bilanId: id });
+    else if (c.checked && linked) linked.bilanId = id;
+    else if (!c.checked && linked) db.entries = db.entries.filter(x => x.id !== linked.id);
+  });
   if (upsert(e)) { toast(bState.id ? 'Bilan modifié' : 'Bilan enregistré'); goBack(); }
 });
 
@@ -638,6 +710,13 @@ function renderMeds() {
     cb.checked = m.chart !== false;
     cb.addEventListener('change', () => { m.chart = cb.checked; persist(); render(); });
     chart.append(cb, 'Repère sur le graphique');
+    const morning = document.createElement('label');
+    morning.className = 'check small';
+    const cbm = document.createElement('input');
+    cbm.type = 'checkbox';
+    cbm.checked = !!m.matin;
+    cbm.addEventListener('change', () => { m.matin = cbm.checked; persist(); });
+    morning.append(cbm, 'Bilan du matin');
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'ghost-danger small-del';
@@ -653,7 +732,10 @@ function renderMeds() {
     line1.append(name, dose, unit);
     const line2 = document.createElement('div');
     line2.className = 'med-line2';
-    line2.append(chart, del);
+    const checks = document.createElement('div');
+    checks.className = 'med-checks';
+    checks.append(morning, chart);
+    line2.append(checks, del);
     li.append(line1, line2);
     ul.append(li);
   });
@@ -683,7 +765,7 @@ function buildCsv() {
   const withNotes = $('#x-notes').checked;
   const r = $('#x-range').value;
   const since = r === 'all' ? 0 : addDays(startOfDay(Date.now()), -(Number(r) - 1));
-  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees_negatives', 'irritabilite', 'fatigue', 'concentration', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite'];
+  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees_negatives', 'irritabilite', 'fatigue', 'concentration', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite', 'reves'];
   if (withNotes) cols.push('pensees', 'fantasme', 'declencheur', 'note_bilan');
   const q = v => { if (v == null) return ''; const s = String(v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const rows = db.entries.filter(e => e.t >= since).map(e => {
@@ -696,7 +778,7 @@ function buildCsv() {
       anxiete: e.anxiete, pensees_negatives: e.pensees_neg,
       irritabilite: e.irritabilite, fatigue: e.fatigue, concentration: e.concentration, appetit: e.appetit,
       medicament: e.type === 'prise' ? (e.med || '') : '', dose_mg: e.dose != null ? fmtNum(e.dose) : '',
-      sommeil_h: e.sommeil_h, sommeil_qualite: e.sommeil_q,
+      sommeil_h: e.sommeil_h, sommeil_qualite: e.sommeil_q, reves: e.reves == null ? '' : (e.reves ? 'oui' : 'non'),
       pensees: e.pensees, fantasme: e.fantasme, declencheur: e.declencheur, note_bilan: e.note,
     };
     return cols.map(c => q(o[c])).join(';');

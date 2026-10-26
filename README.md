@@ -4,7 +4,7 @@ Petite application web installable (PWA) pour tenir un journal d'humeur, de pris
 
 - **Nouvelle saisie** : humeur (déprimé → hypomane), anxiété, pensées négatives, irritabilité, fatigue, concentration, appétit, plus des notes facultatives (pensées, fantasme, déclencheur).
 - **Médicaments** : liste personnelle (gardée sur le téléphone), plusieurs prises notées en un seul enregistrement.
-- **Bilan du matin** : durée et qualité du sommeil, une fois par jour.
+- **Bilan du matin** : sommeil (durée, qualité), rêves oui/non et médicaments du matin à cocher, une fois par jour.
 - **Historique** : graphique jour ou semaine, avec les prises en repères verticaux.
 - **Données** : export CSV (notes exclues par défaut), sauvegarde et restauration JSON.
 

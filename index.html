@@ -75,7 +75,12 @@
         <input id="b-day" type="date" required>
       </label>
       <div id="b-scales" class="scales"></div>
-      <label class="field">Note (réveils, rêves…)<textarea id="b-note" rows="2"></textarea></label>
+      <fieldset id="b-meds-wrap" class="scale">
+        <legend>Médicaments du matin</legend>
+        <div id="b-meds" class="med-checks-list"></div>
+        <p id="b-meds-hint" class="muted small">Tous tes médicaments sont listés. Dans l'onglet Données, coche « Bilan du matin » pour ne garder ici que ceux du matin.</p>
+      </fieldset>
+      <label class="field">Note (réveils, contenu des rêves…)<textarea id="b-note" rows="2"></textarea></label>
       <div class="actions"><button type="submit" class="primary">Enregistrer</button></div>
       <button type="button" id="b-del" class="ghost-danger" data-label="Supprimer ce bilan" hidden>Supprimer ce bilan</button>
     </form>
