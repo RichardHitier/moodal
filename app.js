@@ -9,13 +9,16 @@ const SH = '­'; // césure conditionnelle pour les mots longs sur les petits bo
 const SCALES = {
   humeur:        { label: 'Humeur',            short: 'Humeur',    kind: 'mood',  opts: [[-2, 'Déprimé'], [-1, 'Bas'], [0, 'Stable'], [1, 'Élevé'], [2, 'Hypomane']] },
   anxiete:       { label: 'Anxiété',           short: 'Anxiété',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Modérée'], [3, 'Forte'], [4, 'Panique']] },
-  pensees_neg:   { label: 'Pensées négatives', short: 'P. nég.',   kind: 'level', opts: [[0, 'Absentes'], [1, 'Fugaces'], [2, 'Présentes'], [3, `Insis${SH}tantes`], [4, `Envahis${SH}santes`]] },
+  // Tonalité des pensées : hostilité tournée vers les autres (gauche), contre soi (centre), bienveillance envers soi (droite).
+  pensees_ton:   { label: 'Pensées', short: 'Pensées', kind: 'tone', opts: [[-2, `Agres${SH}sives`], [-1, 'Rancœur'], [0, 'Je suis nul'], [1, `Bienveil${SH}lantes`], [2, "Je m'aime"]] },
+  // Emprise : la place que prennent ces pensées, quelle que soit leur tonalité.
+  pensees_emp:   { label: 'Emprise des pensées', short: 'Emprise', kind: 'level', opts: [[0, 'Aucune'], [1, 'Fugace'], [2, 'Présente'], [3, `Insis${SH}tante`], [4, `Envahis${SH}sante`]] },
   irritabilite:  { label: 'Irritabilité',      short: 'Irrit.',    kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Intense']] },
   fatigue:       { label: 'Fatigue',           short: 'Fatigue',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Épuisé']] },
   concentration: { label: 'Concentration',     short: 'Concentr.', kind: 'level', opts: [[0, 'Nulle'], [1, 'Faible'], [2, 'Moyenne'], [3, 'Bonne'], [4, 'Très bonne']] },
   appetit:       { label: 'Appétit',           short: 'Appétit',   kind: 'level', opts: [[0, 'Aucun'], [1, 'Faible'], [2, 'Normal'], [3, 'Fort'], [4, 'Très fort']] },
 };
-const SAISIE_KEYS = ['humeur', 'anxiete', 'pensees_neg', 'irritabilite', 'fatigue', 'concentration', 'appetit'];
+const SAISIE_KEYS = ['humeur', 'anxiete', 'pensees_ton', 'pensees_emp', 'irritabilite', 'fatigue', 'concentration', 'appetit'];
 const NOTE_KEYS = ['pensees', 'fantasme', 'declencheur'];
 const BILAN_SCALES = {
   sommeil_h: { label: 'Durée du sommeil',   kind: 'level', opts: [[4, '≤ 4 h'], [5, '5 h'], [6, '6 h'], [7, '7 h'], [8, '8 h'], [9, '≥ 9 h']] },
@@ -26,24 +29,34 @@ const BILAN_SCALES = {
 const SERIES = [
   ['humeur', 'Humeur', '--c-humeur', v => v + 2],
   ['anxiete', 'Anxiété', '--c-anx', v => v],
-  ['pensees_neg', 'Pensées nég.', '--c-pen', v => v],
+  ['pensees_ton', 'Pensées', '--c-pen', v => v + 2],
+  ['pensees_emp', 'Emprise', '--c-emp', v => v],
   ['irritabilite', 'Irritabilité', '--c-irr', v => v],
   ['fatigue', 'Fatigue', '--c-fat', v => v],
   ['concentration', 'Concentration', '--c-conc', v => v],
 ];
-const DEFAULT_HIDDEN = ['irritabilite', 'fatigue'];
+const DEFAULT_HIDDEN = ['irritabilite', 'fatigue', 'pensees_emp'];
 
 const $ = s => document.querySelector(s);
 const plain = s => String(s).replace(/­/g, '');
 
 /* ---------- Stockage ---------- */
+// v1.3 : l'ancienne échelle « pensées négatives » (0 à 4) mesurait une intensité ; elle devient l'emprise.
+function migrate(e) {
+  if (!e || e.pensees_neg == null) return false;
+  if (e.pensees_emp == null) e.pensees_emp = e.pensees_neg;
+  delete e.pensees_neg;
+  return true;
+}
 let db = load();
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      return { entries: Array.isArray(d.entries) ? d.entries : [], settings: d.settings || {} };
+      const entries = Array.isArray(d.entries) ? d.entries : [];
+      if (entries.filter(migrate).length) { try { localStorage.setItem(KEY, JSON.stringify({ ...d, entries })); } catch (e) { /* ignoré */ } }
+      return { entries, settings: d.settings || {} };
     }
   } catch (e) { /* stockage indisponible */ }
   return { entries: [], settings: {} };
@@ -532,7 +545,7 @@ function drawChart(el, items, start, end, mode) {
   SERIES.forEach(([k, lab, col]) => {
     lg += `<button type="button" class="lg" data-k="${k}" aria-pressed="${!hidden.includes(k)}"><i style="background:var(${col})"></i>${lab}</button>`;
   });
-  lg += '<span class="hint">Touche une courbe pour l\'afficher ou la masquer. Humeur : 0 déprimé · 2 stable · 4 hypomane. Pointillés : prises.</span></div>';
+  lg += '<span class="hint">Touche une courbe pour l\'afficher ou la masquer. Humeur : 0 déprimé · 2 stable · 4 hypomane. Pensées : 0 agressives · 2 je suis nul · 4 je m\'aime. Pointillés : prises.</span></div>';
   el.innerHTML = s + lg;
   el.querySelectorAll('.lg').forEach(b => b.addEventListener('click', () => {
     const h = new Set(hiddenSeries());
@@ -600,6 +613,7 @@ function renderList(ol, items, group) {
       SAISIE_KEYS.forEach(k => {
         if (it[k] == null) return;
         if (k === 'humeur') body.append(chip(optLabel(SCALES.humeur, it[k]), 'mood m' + (it[k] + 2)));
+        else if (k === 'pensees_ton') body.append(chip(optLabel(SCALES.pensees_ton, it[k]), 'mood p' + (it[k] + 2)));
         else body.append(chip(`${SCALES[k].short} ${it[k]}`));
       });
       const n = NOTE_KEYS.filter(k => it[k]).length;
@@ -765,8 +779,8 @@ function buildCsv() {
   const withNotes = $('#x-notes').checked;
   const r = $('#x-range').value;
   const since = r === 'all' ? 0 : addDays(startOfDay(Date.now()), -(Number(r) - 1));
-  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees_negatives', 'irritabilite', 'fatigue', 'concentration', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite', 'reves'];
-  if (withNotes) cols.push('pensees', 'fantasme', 'declencheur', 'note_bilan');
+  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees', 'pensees_libelle', 'pensees_emprise', 'irritabilite', 'fatigue', 'concentration', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite', 'reves'];
+  if (withNotes) cols.push('note_pensees', 'fantasme', 'declencheur', 'note_bilan');
   const q = v => { if (v == null) return ''; const s = String(v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const rows = db.entries.filter(e => e.t >= since).map(e => {
     const o = {
@@ -775,11 +789,12 @@ function buildCsv() {
       type: e.type,
       humeur: e.humeur,
       humeur_libelle: e.humeur != null ? optLabel(SCALES.humeur, e.humeur) : '',
-      anxiete: e.anxiete, pensees_negatives: e.pensees_neg,
+      anxiete: e.anxiete,
+      pensees: e.pensees_ton, pensees_libelle: e.pensees_ton != null ? optLabel(SCALES.pensees_ton, e.pensees_ton) : '', pensees_emprise: e.pensees_emp,
       irritabilite: e.irritabilite, fatigue: e.fatigue, concentration: e.concentration, appetit: e.appetit,
       medicament: e.type === 'prise' ? (e.med || '') : '', dose_mg: e.dose != null ? fmtNum(e.dose) : '',
       sommeil_h: e.sommeil_h, sommeil_qualite: e.sommeil_q, reves: e.reves == null ? '' : (e.reves ? 'oui' : 'non'),
-      pensees: e.pensees, fantasme: e.fantasme, declencheur: e.declencheur, note_bilan: e.note,
+      note_pensees: e.pensees, fantasme: e.fantasme, declencheur: e.declencheur, note_bilan: e.note,
     };
     return cols.map(c => q(o[c])).join(';');
   });
@@ -820,6 +835,7 @@ $('#bk-in').addEventListener('change', async ev => {
     const d = JSON.parse(await f.text());
     if (!d || !Array.isArray(d.entries)) throw new Error('format');
     const valid = d.entries.filter(e => e && typeof e.id === 'string' && typeof e.t === 'number' && ['saisie', 'prise', 'bilan'].includes(e.type));
+    valid.forEach(migrate);
     const ids = new Set(db.entries.map(e => e.id));
     const added = valid.filter(e => !ids.has(e.id));
     db.entries.push(...added);
@@ -880,7 +896,8 @@ function sampleData() {
       out.push({ id: uid() + i + 'p' + j, type: 'prise', t, med: m.name, medId: m.id, dose: m.dose });
     });
     sx.forEach(([h, mn, hu, an, pn, ir, fa, co, ap], j) => {
-      const e = { id: uid() + i + 's' + j, type: 'saisie', t: at(d, h, mn), humeur: hu, anxiete: an, pensees_neg: pn, irritabilite: ir, fatigue: fa, concentration: co };
+      const e = { id: uid() + i + 's' + j, type: 'saisie', t: at(d, h, mn), humeur: hu, anxiete: an, pensees_emp: pn, irritabilite: ir, fatigue: fa, concentration: co };
+      if (pn > 0) e.pensees_ton = [, 1, 0, 0, -2][pn];
       if (ap != null) e.appetit = ap;
       if (i === 0 && j === 0) e.declencheur = 'Week-end lourd, réveil difficile';
       out.push(e);

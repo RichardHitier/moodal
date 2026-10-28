@@ -289,3 +289,23 @@ button.chip.dose { padding: 6px 10px; }
 #b-meds-hint { margin: 8px 0 0; }
 .med-checks { display: grid; gap: 4px; }
 #b-meds-wrap { margin-top: 16px; }
+
+/* v1.3 : tonalité des pensées (agressives → je suis nul → je m'aime) */
+:root { --p0: #B23A2B; --p1: #C8743A; --p2: #5E6B85; --p3: #4E9A84; --p4: #2E8A5A; --c-emp: #8C6A2E; --c-pen: #B23A6E; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --p0: #EC7A62; --p1: #E3A06A; --p2: #93A0BA; --p3: #77C4AC; --p4: #5CC48E; --c-emp: #CFA75E; --c-pen: #EC7AAE; } }
+:root[data-theme="dark"] { --p0: #EC7A62; --p1: #E3A06A; --p2: #93A0BA; --p3: #77C4AC; --p4: #5CC48E; --c-emp: #CFA75E; --c-pen: #EC7AAE; }
+.scale[data-kind="tone"] .opt[data-i="0"] { box-shadow: inset 0 -4px 0 var(--p0); }
+.scale[data-kind="tone"] .opt[data-i="1"] { box-shadow: inset 0 -4px 0 var(--p1); }
+.scale[data-kind="tone"] .opt[data-i="2"] { box-shadow: inset 0 -4px 0 var(--p2); }
+.scale[data-kind="tone"] .opt[data-i="3"] { box-shadow: inset 0 -4px 0 var(--p3); }
+.scale[data-kind="tone"] .opt[data-i="4"] { box-shadow: inset 0 -4px 0 var(--p4); }
+.scale[data-kind="tone"] .opt[aria-pressed="true"] { color: var(--mood-ink); border-color: transparent; font-weight: 650; box-shadow: none; }
+.scale[data-kind="tone"] .opt[data-i="0"][aria-pressed="true"] { background: var(--p0); }
+.scale[data-kind="tone"] .opt[data-i="1"][aria-pressed="true"] { background: var(--p1); }
+.scale[data-kind="tone"] .opt[data-i="2"][aria-pressed="true"] { background: var(--p2); }
+.scale[data-kind="tone"] .opt[data-i="3"][aria-pressed="true"] { background: var(--p3); }
+.scale[data-kind="tone"] .opt[data-i="4"][aria-pressed="true"] { background: var(--p4); }
+.chip.p0 { background: var(--p0); } .chip.p1 { background: var(--p1); } .chip.p2 { background: var(--p2); }
+.chip.p3 { background: var(--p3); } .chip.p4 { background: var(--p4); }
+.s-pensees_ton { stroke: var(--c-pen); } .f-pensees_ton { fill: var(--c-pen); }
+.s-pensees_emp { stroke: var(--c-emp); } .f-pensees_emp { fill: var(--c-emp); }
