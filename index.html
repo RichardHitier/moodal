@@ -31,7 +31,8 @@
     </button>
     <div class="quick">
       <button id="go-prise" class="q-btn" type="button">
-        <span class="q-title">Médicaments</span>
+        <span class="q-title">Prise de médicaments</span>
+        <span id="prise-plan" class="q-plan"></span>
         <span id="prise-sub" class="q-sub"></span>
       </button>
       <button id="go-bilan" class="q-btn" type="button">
@@ -39,6 +40,7 @@
         <span id="bilan-sub" class="q-sub"></span>
       </button>
     </div>
+    <button type="button" class="link-btn" data-open-meds>Mes médicaments · autre prise ›</button>
     <h2 class="sec">Aujourd'hui</h2>
     <div id="home-chart" class="chart"></div>
     <ol id="home-list" class="entries"></ol>
@@ -78,7 +80,7 @@
       <fieldset id="b-meds-wrap" class="scale">
         <legend>Médicaments du matin</legend>
         <div id="b-meds" class="med-checks-list"></div>
-        <p id="b-meds-hint" class="muted small">Tous tes médicaments sont listés. Dans l'onglet Données, coche « Bilan du matin » pour ne garder ici que ceux du matin.</p>
+        <p id="b-meds-hint" class="muted small">Tous tes médicaments sont listés. Dans « Mes médicaments », coche « Prise quotidienne » pour ne garder ici que ceux de chaque jour.</p>
       </fieldset>
       <label class="field">Note (réveils, contenu des rêves…)<textarea id="b-note" rows="2"></textarea></label>
       <div class="actions"><button type="submit" class="primary">Enregistrer</button></div>
@@ -101,6 +103,25 @@
     <ol id="h-list" class="entries"></ol>
   </section>
 
+  <section id="v-meds" hidden>
+    <div class="view-head">
+      <button class="back" data-back type="button">‹ Retour</button>
+      <h1>Mes médicaments</h1>
+    </div>
+    <p class="muted intro">Les médicaments cochés « Prise quotidienne » sont notés ensemble, avec leur dose, quand tu touches « Prise de médicaments » sur l'accueil. Une dose modifiée ici s'applique à la prochaine prise.</p>
+    <ul id="med-list" class="med-list"></ul>
+    <div class="card add-card">
+      <h2>Ajouter un médicament</h2>
+      <div class="row add-row">
+        <input id="med-name" type="text" placeholder="Nom" aria-label="Nom du nouveau médicament">
+        <input id="med-dose" type="text" inputmode="decimal" placeholder="mg" class="med-dose" aria-label="Dose en mg">
+      </div>
+      <label class="check"><input type="checkbox" id="med-daily" checked> Ajouter à la prise quotidienne</label>
+      <div class="actions"><button id="med-add" type="button" class="primary">Ajouter</button></div>
+    </div>
+    <div class="actions"><button id="m-ponctuel" type="button">Noter une prise ponctuelle…</button></div>
+  </section>
+
   <section id="v-data" hidden>
     <h1 class="page-h">Données</h1>
     <div class="card">
@@ -121,14 +142,9 @@
       </div>
     </div>
     <div class="card">
-      <h2>Mes médicaments</h2>
-      <p class="muted">La liste reste sur ce téléphone, comme le reste. La dose se met à jour à chaque prise notée.</p>
-      <ul id="med-list" class="med-list"></ul>
-      <div class="row add-row">
-        <input id="med-name" type="text" placeholder="Nom" aria-label="Nom du nouveau médicament">
-        <input id="med-dose" type="text" inputmode="decimal" placeholder="mg" class="med-dose" aria-label="Dose en mg">
-        <button id="med-add" type="button" class="btn">Ajouter</button>
-      </div>
+      <h2>Médicaments</h2>
+      <p class="muted">Dosages, prise quotidienne et ajout d'un médicament.</p>
+      <div class="actions"><button type="button" data-open-meds>Gérer mes médicaments</button></div>
     </div>
     <div class="card">
       <h2>Sauvegarde</h2>

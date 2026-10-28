@@ -16,7 +16,7 @@
   ],
   "shortcuts": [
     { "name": "Nouvelle saisie", "url": "./#saisie", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
-    { "name": "J'ai pris ma dose", "url": "./#prise", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Prise de médicaments", "url": "./#prise", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Bilan du matin", "url": "./#bilan", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

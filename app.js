@@ -58,7 +58,13 @@ function load() {
       const d = JSON.parse(raw);
       const entries = Array.isArray(d.entries) ? d.entries : [];
       if (entries.filter(migrate).length) { try { localStorage.setItem(KEY, JSON.stringify({ ...d, entries })); } catch (e) { /* ignoré */ } }
-      return { entries, settings: d.settings || {} };
+      const settings = d.settings || {};
+      // v1.5 : la case « Bilan du matin » devient « Prise quotidienne ».
+      (Array.isArray(settings.meds) ? settings.meds : []).forEach(m => {
+        if (m.quotidien == null && m.matin != null) m.quotidien = !!m.matin;
+        delete m.matin;
+      });
+      return { entries, settings };
     }
   } catch (e) { /* stockage indisponible */ }
   return { entries: [], settings: {} };
@@ -77,6 +83,7 @@ function upsert(e) {
 }
 function removeEntry(id) { db.entries = db.entries.filter(x => x.id !== id); persist(); }
 const meds = () => (Array.isArray(db.settings.meds) ? db.settings.meds : (db.settings.meds = []));
+const dailyMeds = () => meds().filter(m => m.quotidien);
 const hiddenSeries = () => (Array.isArray(db.settings.hidden) ? db.settings.hidden : DEFAULT_HIDDEN);
 
 /* ---------- Dates et nombres ---------- */
@@ -185,7 +192,7 @@ $('#f-saisie').addEventListener('submit', ev => {
 });
 
 /* ---------- Médicaments ---------- */
-function addMed(name, doseRaw) {
+function addMed(name, doseRaw, quotidien = false) {
   name = String(name || '').trim();
   if (!name) { toast('Indique le nom du médicament.'); return null; }
   if (meds().some(m => m.name.toLowerCase() === name.toLowerCase())) { toast(`${name} est déjà dans la liste.`); return null; }
@@ -194,7 +201,7 @@ function addMed(name, doseRaw) {
     dose = parseNum(doseRaw);
     if (!(dose > 0)) { toast('Indique la dose en mg, par exemple 0,25.'); return null; }
   }
-  const m = { id: uid(), name, dose, chart: true };
+  const m = { id: uid(), name, dose, chart: true, quotidien: !!quotidien };
   meds().push(m);
   return persist() ? m : null;
 }
@@ -206,6 +213,39 @@ function lastPrises() {
   if (t === null) return [];
   return db.entries.filter(e => e.type === 'prise' && e.t === t);
 }
+
+/* ---------- Prise quotidienne en un toucher ---------- */
+function quickTake(force) {
+  const list = dailyMeds();
+  if (!list.length) {
+    openMeds();
+    toast('Coche « Prise quotidienne » pour les médicaments à noter en un toucher.');
+    return;
+  }
+  const noDose = list.find(m => m.dose == null);
+  if (noDose) { openMeds(); toast(`Indique la dose de ${noDose.name}.`); return; }
+  const now = Date.now();
+  if (!force) {
+    const recent = db.entries.filter(e => e.type === 'prise' && list.some(m => m.id === e.medId) && e.t <= now && now - e.t < 60 * 60000);
+    if (recent.length) {
+      toast(`Prise déjà notée à ${hm(recent[recent.length - 1].t)}.`, 'Noter quand même', () => quickTake(true));
+      return;
+    }
+  }
+  const added = list.map(m => ({ id: uid(), type: 'prise', t: now, med: m.name, medId: m.id, dose: m.dose }));
+  db.entries.push(...added);
+  sortEntries();
+  if (!persist()) return;
+  render();
+  const ids = new Set(added.map(e => e.id));
+  toast(`Prise notée à ${hm(now)} : ${list.map(m => m.name).join(', ')}`, 'Annuler', () => {
+    db.entries = db.entries.filter(e => !ids.has(e.id));
+    persist();
+    render();
+    toast('Prise annulée');
+  });
+}
+function openMeds() { renderMeds(true); show('meds'); }
 
 /* ---------- Prise ---------- */
 let pEdit = null;
@@ -366,14 +406,14 @@ function bilanSummary(b) {
   if (!p.length && b.note) p.push('note');
   return p.join(' · ');
 }
-const morningMeds = () => { const m = meds().filter(x => x.matin); return m.length ? m : meds(); };
+const morningMeds = () => { const m = dailyMeds(); return m.length ? m : meds(); };
 function renderBilanMeds() {
   const box = $('#b-meds');
   box.replaceChildren();
   const day = $('#b-day').value;
   const list = morningMeds();
   $('#b-meds-wrap').hidden = !meds().length;
-  $('#b-meds-hint').hidden = meds().some(x => x.matin);
+  $('#b-meds-hint').hidden = meds().some(x => x.quotidien);
   list.forEach(m => {
     const linked = db.entries.find(e => e.type === 'prise' && e.medId === m.id && bState.id && e.bilanId === bState.id);
     const other = !linked && db.entries.find(e => e.type === 'prise' && e.medId === m.id && !e.bilanId && dayKey(e.t) === day && new Date(e.t).getHours() < 12);
@@ -638,9 +678,12 @@ function render() {
   const now = Date.now();
   $('#today-label').textContent = fmtDay(now);
   const lp = lastPrises();
-  $('#prise-sub').textContent = lp.length
-    ? `Dernière : ${lp.map(e => e.med ? abbr(e.med) : fmtDose(e.dose)).join(', ')}, ${relDay(lp[0].t)} ${hm(lp[0].t)}`
-    : 'Noter une prise';
+  const dm = dailyMeds();
+  $('#prise-plan').textContent = dm.length
+    ? dm.map(m => `${m.name} ${m.dose != null ? fmtNum(m.dose) : '?'}`).join(' · ')
+    : 'À configurer : touche pour choisir tes médicaments';
+  $('#prise-sub').textContent = lp.length ? `Dernière : ${relDay(lp[0].t)} ${hm(lp[0].t)}` : '';
+  $('#prise-sub').hidden = !lp.length;
   const b = bilanFor(dayKey(now));
   $('#go-bilan').classList.toggle('todo', !b);
   $('#bilan-sub').textContent = b ? `Fait · ${bilanSummary(b)}` : 'À remplir : sommeil de la nuit';
@@ -676,9 +719,9 @@ function renderHist() {
   });
   renderList($('#h-list'), items, hMode === 'week');
 }
-function renderMeds() {
+function renderMeds(force) {
   const ul = $('#med-list');
-  if (ul.contains(document.activeElement)) return; // ne pas casser une saisie en cours
+  if (!force && ul.contains(document.activeElement)) return; // ne pas casser une saisie en cours
   ul.replaceChildren();
   if (!meds().length) {
     const li = document.createElement('li');
@@ -715,6 +758,8 @@ function renderMeds() {
       if (!(v > 0)) { toast('Indique la dose en mg, par exemple 0,25.'); dose.value = m.dose != null ? fmtNum(m.dose) : ''; return; }
       m.dose = v;
       persist();
+      render();
+      toast(`${m.name} : ${fmtDose(v)}`);
     });
     const unit = document.createElement('span');
     unit.className = 'med-unit';
@@ -730,9 +775,9 @@ function renderMeds() {
     morning.className = 'check small';
     const cbm = document.createElement('input');
     cbm.type = 'checkbox';
-    cbm.checked = !!m.matin;
-    cbm.addEventListener('change', () => { m.matin = cbm.checked; persist(); });
-    morning.append(cbm, 'Bilan du matin');
+    cbm.checked = !!m.quotidien;
+    cbm.addEventListener('change', () => { m.quotidien = cbm.checked; persist(); render(); });
+    morning.append(cbm, 'Prise quotidienne');
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'ghost-danger small-del';
@@ -740,7 +785,8 @@ function renderMeds() {
     setDelete(del, true, () => {
       db.settings.meds = meds().filter(x => x.id !== m.id);
       persist();
-      renderMeds();
+      render();
+      renderMeds(true);
       toast(`${m.name} retiré de la liste. Ses prises restent dans l'historique.`);
     });
     const line1 = document.createElement('div');
@@ -768,12 +814,13 @@ function renderData() {
   } catch (e) { /* ignoré */ }
 }
 $('#med-add').addEventListener('click', () => {
-  const m = addMed($('#med-name').value, $('#med-dose').value);
+  const m = addMed($('#med-name').value, $('#med-dose').value, $('#med-daily').checked);
   if (!m) return;
   $('#med-name').value = '';
   $('#med-dose').value = '';
-  renderMeds();
-  toast(`${m.name} ajouté`);
+  render();
+  renderMeds(true);
+  toast(m.quotidien ? `${m.name} ajouté à la prise quotidienne` : `${m.name} ajouté`);
 });
 
 /* ---------- Export ---------- */
@@ -878,7 +925,7 @@ function sampleData() {
   const now = Date.now(), today = startOfDay(now), out = [];
   const at = (d, h, m) => { const x = new Date(addDays(today, d)); x.setHours(h, m, 0, 0); return x.getTime(); };
   const medList = (window.MOODAL_PREVIEW_MEDS || [{ name: 'Médicament A', dose: 10 }, { name: 'Médicament B', dose: 20 }])
-    .map(m => ({ id: uid() + m.name.length, name: m.name, dose: m.dose, chart: true }));
+    .map(m => ({ id: uid() + m.name.length, name: m.name, dose: m.dose, chart: true, quotidien: m.quotidien !== false }));
   const days = [
     // [prise h (null = pas de prise du dernier médicament), sommeil h, qualité, saisies [h, m, humeur, anx, pen, irr, fat, conc, app]]
     [8.1, 6, 2, [[7, 30, -1, 3, 3, 3, 3, 1, 1], [10, 15, 0, 1, 1, 1, 2, 3, 1], [13, 0, 0, 1, 1, 1, 1, 3, 1], [17, 40, 0, 2, 2, 2, 2, 2, 2], [21, 10, -1, 3, 3, 3, 3, 1, 3]]],
@@ -913,7 +960,9 @@ document.querySelectorAll('.app-version').forEach(el => { el.textContent = 'v' +
 document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => goTab(b.dataset.tab)));
 document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', goBack));
 $('#go-saisie').addEventListener('click', () => openSaisie(null));
-$('#go-prise').addEventListener('click', () => openPrise(null));
+$('#go-prise').addEventListener('click', () => quickTake(false));
+document.querySelectorAll('[data-open-meds]').forEach(b => b.addEventListener('click', openMeds));
+$('#m-ponctuel').addEventListener('click', () => openPrise(null));
 $('#go-bilan').addEventListener('click', () => openBilan());
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { hMode = b.dataset.mode; renderHist(); }));
 $('#h-prev').addEventListener('click', () => { hAnchor = addDays(hAnchor, hMode === 'day' ? -1 : -7); renderHist(); });
@@ -933,7 +982,7 @@ const shortcut = location.hash.slice(1);
 if (shortcut) {
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* ignoré */ }
   if (shortcut === 'saisie') openSaisie(null);
-  else if (shortcut === 'prise') openPrise(null);
+  else if (shortcut === 'prise') quickTake(false);
   else if (shortcut === 'bilan') openBilan();
 }
 

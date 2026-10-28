@@ -319,3 +319,17 @@ button.chip.dose { padding: 6px 10px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-acou: #74BCE0; } }
 :root[data-theme="dark"] { --c-acou: #74BCE0; }
 .s-acouphenes { stroke: var(--c-acou); } .f-acouphenes { fill: var(--c-acou); }
+
+/* v1.5 : prise quotidienne en un toucher, page Mes médicaments */
+.q-plan { font-size: 13px; color: var(--ink); line-height: 1.3; }
+.link-btn { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--accent); font-weight: 600; font-size: 14px; padding: 12px 2px 2px; }
+.intro { margin: 6px 0 4px; font-size: 14px; }
+.add-card .add-row input:first-child { flex: 1; }
+.add-card .check { margin-top: 12px; }
+.add-card .actions { margin-top: 12px; }
+#v-meds > .actions { margin-top: 14px; }
+#v-meds .med-item { background: var(--surface); }
+/* Couleurs distinctes pour Pensées (ocre) et Emprise (olive), à côté de l'Anxiété (framboise). */
+:root { --c-pen: #A67C00; --c-emp: #6E7F3A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c-pen: #D9B24A; --c-emp: #A8BC6A; } }
+:root[data-theme="dark"] { --c-pen: #D9B24A; --c-emp: #A8BC6A; }
