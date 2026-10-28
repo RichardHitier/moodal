@@ -7,12 +7,12 @@ const PREVIEW = !!window.MOODAL_PREVIEW;
 const SH = '­'; // césure conditionnelle pour les mots longs sur les petits boutons
 
 const SCALES = {
-  humeur:        { label: 'Humeur',            short: 'Humeur',    kind: 'mood',  opts: [[-2, 'Déprimé'], [-1, 'Bas'], [0, 'Stable'], [1, 'Élevé'], [2, 'Hypomane']] },
-  anxiete:       { label: 'Anxiété',           short: 'Anxiété',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Modérée'], [3, 'Forte'], [4, 'Panique']] },
+  humeur:        { label: 'Humeur',            short: 'Humeur',    kind: 'mood',  opts: [[-2, 'Déprimé'], [-1, 'Bas'], [0, 'Stable'], [1, 'Élevé'], [2, `Hypo${SH}mane`]] },
+  anxiete:       { label: 'Anxiété',           short: 'Anxiété',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, `Modé${SH}rée`], [3, 'Forte'], [4, 'Panique']] },
   // Tonalité des pensées : hostilité tournée vers les autres (gauche), contre soi (centre), bienveillance envers soi (droite).
-  pensees_ton:   { label: 'Pensées', short: 'Pensées', kind: 'tone', opts: [[-2, `Agres${SH}sives`], [-1, 'Rancœur'], [0, 'Je suis nul'], [1, `Bienveil${SH}lantes`], [2, "Je m'aime"]] },
+  pensees_ton:   { label: 'Pensées', short: 'Pensées', kind: 'tone', opts: [[-2, `Agres${SH}sives`], [-1, `Ran${SH}cœur`], [0, 'Je suis nul'], [1, `Bienveil${SH}lantes`], [2, "Je m'aime"]] },
   // Emprise : la place que prennent ces pensées, quelle que soit leur tonalité.
-  pensees_emp:   { label: 'Emprise des pensées', short: 'Emprise', kind: 'level', opts: [[0, 'Aucune'], [1, 'Fugace'], [2, 'Présente'], [3, `Insis${SH}tante`], [4, `Envahis${SH}sante`]] },
+  pensees_emp:   { label: 'Emprise des pensées', short: 'Emprise', kind: 'level', opts: [[0, 'Aucune'], [1, 'Fugace'], [2, `Pré${SH}sente`], [3, `Insis${SH}tante`], [4, `Envahis${SH}sante`]] },
   irritabilite:  { label: 'Irritabilité',      short: 'Irrit.',    kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Intense']] },
   fatigue:       { label: 'Fatigue',           short: 'Fatigue',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Épuisé']] },
   concentration: { label: 'Concentration',     short: 'Concentr.', kind: 'level', opts: [[0, 'Nulle'], [1, 'Faible'], [2, 'Moyenne'], [3, 'Bonne'], [4, 'Très bonne']] },
@@ -939,5 +939,11 @@ try {
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then(renderData).catch(() => {});
 } catch (e) { /* ignoré */ }
 if (!PREVIEW && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Quand une nouvelle version prend la main, recharger une fois pour l'afficher tout de suite.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded) { reloaded = true; location.reload(); }
+  });
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
 }

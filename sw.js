@@ -15,7 +15,14 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // cache: 'reload' contourne le cache HTTP du navigateur (GitHub Pages le garde 10 min),
+  // sinon une nouvelle version pourrait embarquer d'anciens fichiers.
+  e.waitUntil(caches.open(CACHE)
+    .then(c => Promise.all(ASSETS.map(u => fetch(new Request(u, { cache: 'reload' })).then(r => {
+      if (!r.ok) throw new Error(u + ' : ' + r.status);
+      return c.put(u, r);
+    }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
@@ -32,7 +39,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(caches.open(CACHE).then(async cache => {
     const hit = await cache.match(req, { ignoreSearch: true });
-    const net = fetch(req).then(res => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
+    const net = fetch(req, { cache: 'no-cache' }).then(res => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
     if (hit) { e.waitUntil(net); return hit; }
     const res = await net;
     if (res) return res;

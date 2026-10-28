@@ -309,3 +309,7 @@ button.chip.dose { padding: 6px 10px; }
 .chip.p3 { background: var(--p3); } .chip.p4 { background: var(--p4); }
 .s-pensees_ton { stroke: var(--c-pen); } .f-pensees_ton { fill: var(--c-pen); }
 .s-pensees_emp { stroke: var(--c-emp); } .f-pensees_emp { fill: var(--c-emp); }
+
+/* v1.3.1 : coupures propres sur les petits boutons (césures manuelles seulement) */
+.opt { overflow-wrap: normal; word-break: normal; hyphens: manual; font-size: 12.5px; letter-spacing: -0.01em; padding-inline: 3px; }
+.opts { gap: 5px; } .opt { padding-inline: 2px; }
