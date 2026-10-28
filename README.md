@@ -2,7 +2,7 @@
 
 Petite application web installable (PWA) pour tenir un journal d'humeur, de prises et de sommeil sur Android.
 
-- **Nouvelle saisie** : humeur (déprimé → hypomane), anxiété, pensées (agressives → je suis nul → je m'aime) et leur emprise, irritabilité, fatigue, concentration, appétit, plus des notes facultatives (pensées, fantasme, déclencheur).
+- **Nouvelle saisie** : humeur (déprimé → hypomane), anxiété, pensées (agressives → je suis nul → je m'aime) et leur emprise, irritabilité, fatigue, concentration, acouphènes, appétit, plus des notes facultatives (pensées, fantasme, déclencheur).
 - **Médicaments** : liste personnelle (gardée sur le téléphone), plusieurs prises notées en un seul enregistrement.
 - **Bilan du matin** : sommeil (durée, qualité), rêves oui/non et médicaments du matin à cocher, une fois par jour.
 - **Historique** : graphique jour ou semaine, avec les prises en repères verticaux.

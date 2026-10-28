@@ -16,9 +16,10 @@ const SCALES = {
   irritabilite:  { label: 'Irritabilité',      short: 'Irrit.',    kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Intense']] },
   fatigue:       { label: 'Fatigue',           short: 'Fatigue',   kind: 'level', opts: [[0, 'Aucune'], [1, 'Légère'], [2, 'Moyenne'], [3, 'Forte'], [4, 'Épuisé']] },
   concentration: { label: 'Concentration',     short: 'Concentr.', kind: 'level', opts: [[0, 'Nulle'], [1, 'Faible'], [2, 'Moyenne'], [3, 'Bonne'], [4, 'Très bonne']] },
+  acouphenes:    { label: 'Acouphènes',        short: 'Acouph.',   kind: 'level', opts: [[0, 'Aucun'], [1, 'Léger'], [2, 'Gênant'], [3, 'Fort']] },
   appetit:       { label: 'Appétit',           short: 'Appétit',   kind: 'level', opts: [[0, 'Aucun'], [1, 'Faible'], [2, 'Normal'], [3, 'Fort'], [4, 'Très fort']] },
 };
-const SAISIE_KEYS = ['humeur', 'anxiete', 'pensees_ton', 'pensees_emp', 'irritabilite', 'fatigue', 'concentration', 'appetit'];
+const SAISIE_KEYS = ['humeur', 'anxiete', 'pensees_ton', 'pensees_emp', 'irritabilite', 'fatigue', 'concentration', 'acouphenes', 'appetit'];
 const NOTE_KEYS = ['pensees', 'fantasme', 'declencheur'];
 const BILAN_SCALES = {
   sommeil_h: { label: 'Durée du sommeil',   kind: 'level', opts: [[4, '≤ 4 h'], [5, '5 h'], [6, '6 h'], [7, '7 h'], [8, '8 h'], [9, '≥ 9 h']] },
@@ -34,8 +35,9 @@ const SERIES = [
   ['irritabilite', 'Irritabilité', '--c-irr', v => v],
   ['fatigue', 'Fatigue', '--c-fat', v => v],
   ['concentration', 'Concentration', '--c-conc', v => v],
+  ['acouphenes', 'Acouphènes', '--c-acou', v => v * 4 / 3], // 0..3 ramené sur 0..4
 ];
-const DEFAULT_HIDDEN = ['irritabilite', 'fatigue', 'pensees_emp'];
+const DEFAULT_HIDDEN = ['irritabilite', 'fatigue', 'pensees_emp', 'acouphenes'];
 
 const $ = s => document.querySelector(s);
 const plain = s => String(s).replace(/­/g, '');
@@ -779,7 +781,7 @@ function buildCsv() {
   const withNotes = $('#x-notes').checked;
   const r = $('#x-range').value;
   const since = r === 'all' ? 0 : addDays(startOfDay(Date.now()), -(Number(r) - 1));
-  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees', 'pensees_libelle', 'pensees_emprise', 'irritabilite', 'fatigue', 'concentration', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite', 'reves'];
+  const cols = ['date', 'heure', 'type', 'humeur', 'humeur_libelle', 'anxiete', 'pensees', 'pensees_libelle', 'pensees_emprise', 'irritabilite', 'fatigue', 'concentration', 'acouphenes', 'appetit', 'medicament', 'dose_mg', 'sommeil_h', 'sommeil_qualite', 'reves'];
   if (withNotes) cols.push('note_pensees', 'fantasme', 'declencheur', 'note_bilan');
   const q = v => { if (v == null) return ''; const s = String(v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const rows = db.entries.filter(e => e.t >= since).map(e => {
@@ -791,7 +793,7 @@ function buildCsv() {
       humeur_libelle: e.humeur != null ? optLabel(SCALES.humeur, e.humeur) : '',
       anxiete: e.anxiete,
       pensees: e.pensees_ton, pensees_libelle: e.pensees_ton != null ? optLabel(SCALES.pensees_ton, e.pensees_ton) : '', pensees_emprise: e.pensees_emp,
-      irritabilite: e.irritabilite, fatigue: e.fatigue, concentration: e.concentration, appetit: e.appetit,
+      irritabilite: e.irritabilite, fatigue: e.fatigue, concentration: e.concentration, acouphenes: e.acouphenes, appetit: e.appetit,
       medicament: e.type === 'prise' ? (e.med || '') : '', dose_mg: e.dose != null ? fmtNum(e.dose) : '',
       sommeil_h: e.sommeil_h, sommeil_qualite: e.sommeil_q, reves: e.reves == null ? '' : (e.reves ? 'oui' : 'non'),
       note_pensees: e.pensees, fantasme: e.fantasme, declencheur: e.declencheur, note_bilan: e.note,
